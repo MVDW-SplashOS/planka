@@ -6,34 +6,34 @@
 module.exports = {
   inputs: {
     record: {
-      type: 'ref',
+      type: "ref",
       required: true,
     },
     values: {
-      type: 'json',
+      type: "json",
       required: true,
     },
     project: {
-      type: 'ref',
+      type: "ref",
       required: true,
     },
     board: {
-      type: 'ref',
+      type: "ref",
       required: true,
     },
     list: {
-      type: 'ref',
+      type: "ref",
       required: true,
     },
     actorUser: {
-      type: 'ref',
+      type: "ref",
       required: true,
     },
     webhooks: {
-      type: 'ref',
+      type: "ref",
     },
     request: {
-      type: 'ref',
+      type: "ref",
     },
   },
 
@@ -57,7 +57,7 @@ module.exports = {
 
     if (values.board) {
       if (values.board.projectId !== project.id) {
-        throw 'boardInValuesMustBelongToProject';
+        throw "boardInValuesMustBelongToProject";
       }
 
       if (values.board.id === inputs.board.id) {
@@ -71,7 +71,7 @@ module.exports = {
 
     if (values.list) {
       if (values.list.boardId !== board.id) {
-        throw 'listInValuesMustBelongToBoard';
+        throw "listInValuesMustBelongToBoard";
       }
 
       if (values.list.id === inputs.list.id) {
@@ -80,14 +80,14 @@ module.exports = {
         values.listId = values.list.id;
       }
     } else if (values.board) {
-      throw 'listMustBeInValues';
+      throw "listMustBeInValues";
     }
 
     const list = values.list || inputs.list;
 
     if (sails.helpers.lists.isFinite(list)) {
       if (values.list && _.isUndefined(values.position)) {
-        throw 'positionMustBeInValues';
+        throw "positionMustBeInValues";
       }
     } else {
       values.position = null;
@@ -95,7 +95,7 @@ module.exports = {
 
     if (values.coverAttachment) {
       if (!values.coverAttachment.data.image) {
-        throw 'coverAttachmentInValuesMustContainImage';
+        throw "coverAttachmentInValuesMustContainImage";
       }
 
       if (values.coverAttachment.id === inputs.record.coverAttachmentId) {
@@ -105,7 +105,9 @@ module.exports = {
       }
     }
 
-    const dueDate = _.isUndefined(values.dueDate) ? inputs.record.dueDate : values.dueDate;
+    const dueDate = _.isUndefined(values.dueDate)
+      ? inputs.record.dueDate
+      : values.dueDate;
 
     if (dueDate) {
       const isDueCompleted = _.isUndefined(values.isDueCompleted)
@@ -119,6 +121,24 @@ module.exports = {
       values.isDueCompleted = null;
     }
 
+    // Process recurrence: when due date is completed and card has recurrence,
+    // create the next recurring card
+    if (
+      values.isDueCompleted &&
+      !inputs.record.isDueCompleted &&
+      inputs.record.recurrence
+    ) {
+      await sails.helpers.cards.processRecurrence.with({
+        card: inputs.record,
+        recurrence: inputs.record.recurrence,
+        project: inputs.project,
+        board: inputs.board,
+        list: inputs.list,
+        actorUser: inputs.actorUser,
+        request: inputs.request,
+      });
+    }
+
     let card;
     if (_.isEmpty(values)) {
       card = inputs.record;
@@ -130,10 +150,8 @@ module.exports = {
           exceptIdOrIds: inputs.record.id,
         });
 
-        const { position, repositions } = sails.helpers.utils.insertToPositionables(
-          values.position,
-          cards,
-        );
+        const { position, repositions } =
+          sails.helpers.utils.insertToPositionables(values.position, cards);
 
         values.position = position;
 
@@ -151,7 +169,7 @@ module.exports = {
               },
             );
 
-            sails.sockets.broadcast(`board:${board.id}`, 'cardUpdate', {
+            sails.sockets.broadcast(`board:${board.id}`, "cardUpdate", {
               item: {
                 id: reposition.record.id,
                 position: reposition.position,
@@ -167,19 +185,21 @@ module.exports = {
       if (values.board) {
         prevLabels = await sails.helpers.cards.getLabels(inputs.record.id);
 
-        const boardMemberUserIds = await sails.helpers.boards.getMemberUserIds(values.board.id);
+        const boardMemberUserIds = await sails.helpers.boards.getMemberUserIds(
+          values.board.id,
+        );
 
         await CardSubscription.qm.delete({
           cardId: inputs.record.id,
           userId: {
-            '!=': boardMemberUserIds,
+            "!=": boardMemberUserIds,
           },
         });
 
         await CardMembership.qm.delete({
           cardId: inputs.record.id,
           userId: {
-            '!=': boardMemberUserIds,
+            "!=": boardMemberUserIds,
           },
         });
 
@@ -194,7 +214,7 @@ module.exports = {
           {
             taskListId: taskListIds,
             assigneeUserId: {
-              '!=': boardMemberUserIds,
+              "!=": boardMemberUserIds,
             },
           },
           {
@@ -242,7 +262,7 @@ module.exports = {
 
       if (values.board) {
         const labels = await Label.qm.getByBoardId(card.boardId);
-        const labelByName = _.keyBy(labels, 'name');
+        const labelByName = _.keyBy(labels, "name");
 
         const labelIds = await Promise.all(
           prevLabels.map(async (label) => {
@@ -254,7 +274,7 @@ module.exports = {
               project,
               webhooks,
               values: {
-                ..._.omit(label, ['id', 'boardId', 'createdAt', 'updatedAt']),
+                ..._.omit(label, ["id", "boardId", "createdAt", "updatedAt"]),
                 board,
               },
               actorUser: inputs.actorUser,
@@ -272,7 +292,7 @@ module.exports = {
                 cardId: card.id,
               });
             } catch (error) {
-              if (error.code !== 'E_UNIQUE') {
+              if (error.code !== "E_UNIQUE") {
                 throw error;
               }
             }
@@ -283,7 +303,7 @@ module.exports = {
 
         sails.sockets.broadcast(
           `board:${inputs.board.id}`,
-          'cardUpdate',
+          "cardUpdate",
           {
             item: {
               id: card.id,
@@ -295,7 +315,7 @@ module.exports = {
 
         sails.sockets.broadcast(
           `board:${card.boardId}`,
-          'cardUpdate',
+          "cardUpdate",
           {
             item: card,
           },
@@ -306,7 +326,7 @@ module.exports = {
       } else {
         sails.sockets.broadcast(
           `board:${card.boardId}`,
-          'cardUpdate',
+          "cardUpdate",
           {
             item: card,
           },
@@ -320,9 +340,9 @@ module.exports = {
               card,
               type: Action.Types.MOVE_CARD,
               data: {
-                card: _.pick(card, ['name']),
-                fromList: _.pick(inputs.list, ['id', 'type', 'name']),
-                toList: _.pick(values.list, ['id', 'type', 'name']),
+                card: _.pick(card, ["name"]),
+                fromList: _.pick(inputs.list, ["id", "type", "name"]),
+                toList: _.pick(values.list, ["id", "type", "name"]),
               },
               user: inputs.actorUser,
             },
@@ -334,13 +354,21 @@ module.exports = {
       }
 
       if (tasks) {
-        const taskListIds = sails.helpers.utils.mapRecords(tasks, 'taskListId', true);
+        const taskListIds = sails.helpers.utils.mapRecords(
+          tasks,
+          "taskListId",
+          true,
+        );
         const taskLists = await TaskList.qm.getByIds(taskListIds);
-        const taskListById = _.keyBy(taskLists, 'id');
+        const taskListById = _.keyBy(taskLists, "id");
 
-        const cardIds = sails.helpers.utils.mapRecords(taskLists, 'cardId', true);
+        const cardIds = sails.helpers.utils.mapRecords(
+          taskLists,
+          "cardId",
+          true,
+        );
         const cards = await Card.qm.getByIds(cardIds);
-        const cardById = _.keyBy(cards, 'id');
+        const cardById = _.keyBy(cards, "id");
 
         const boardIdByTaskId = tasks.reduce(
           (result, task) => ({
@@ -351,9 +379,13 @@ module.exports = {
         );
 
         tasks.forEach((task) => {
-          sails.sockets.broadcast(`board:${boardIdByTaskId[task.id]}`, 'taskUpdate', {
-            item: task,
-          });
+          sails.sockets.broadcast(
+            `board:${boardIdByTaskId[task.id]}`,
+            "taskUpdate",
+            {
+              item: task,
+            },
+          );
         });
 
         // TODO: send webhooks
@@ -396,7 +428,7 @@ module.exports = {
               userId: inputs.actorUser.id,
             });
           } catch (error) {
-            if (error.code !== 'E_UNIQUE') {
+            if (error.code !== "E_UNIQUE") {
               throw error;
             }
           }
@@ -409,7 +441,7 @@ module.exports = {
 
         sails.sockets.broadcast(
           `user:${inputs.actorUser.id}`,
-          'cardUpdate',
+          "cardUpdate",
           {
             item: {
               isSubscribed,

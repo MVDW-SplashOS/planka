@@ -117,33 +117,37 @@
  *         $ref: '#/components/responses/UnprocessableEntity'
  */
 
-const { isDueDate, isStopwatch } = require('../../../utils/validators');
-const { idInput } = require('../../../utils/inputs');
+const {
+  isDueDate,
+  isStopwatch,
+  isRecurrence,
+} = require("../../../utils/validators");
+const { idInput } = require("../../../utils/inputs");
 
 const Errors = {
   NOT_ENOUGH_RIGHTS: {
-    notEnoughRights: 'Not enough rights',
+    notEnoughRights: "Not enough rights",
   },
   CARD_NOT_FOUND: {
-    cardNotFound: 'Card not found',
+    cardNotFound: "Card not found",
   },
   BOARD_NOT_FOUND: {
-    boardNotFound: 'Board not found',
+    boardNotFound: "Board not found",
   },
   LIST_NOT_FOUND: {
-    listNotFound: 'List not found',
+    listNotFound: "List not found",
   },
   COVER_ATTACHMENT_NOT_FOUND: {
-    coverAttachmentNotFound: 'Cover attachment not found',
+    coverAttachmentNotFound: "Cover attachment not found",
   },
   LIST_MUST_BE_PRESENT: {
-    listMustBePresent: 'List must be present',
+    listMustBePresent: "List must be present",
   },
   COVER_ATTACHMENT_MUST_CONTAIN_IMAGE: {
-    coverAttachmentMustContainImage: 'Cover attachment must contain image',
+    coverAttachmentMustContainImage: "Cover attachment must contain image",
   },
   POSITION_MUST_BE_PRESENT: {
-    positionMustBePresent: 'Position must be present',
+    positionMustBePresent: "Position must be present",
   },
 };
 
@@ -160,67 +164,71 @@ module.exports = {
       allowNull: true,
     },
     type: {
-      type: 'string',
+      type: "string",
       isIn: Object.values(Card.Types),
     },
     position: {
-      type: 'number',
+      type: "number",
       min: 0,
       allowNull: true,
     },
     name: {
-      type: 'string',
+      type: "string",
       isNotEmptyString: true,
       maxLength: 1024,
     },
     description: {
-      type: 'string',
+      type: "string",
       isNotEmptyString: true,
       maxLength: 1048576,
       allowNull: true,
     },
     dueDate: {
-      type: 'string',
+      type: "string",
       custom: isDueDate,
       allowNull: true,
     },
     isDueCompleted: {
-      type: 'boolean',
+      type: "boolean",
       allowNull: true,
     },
     stopwatch: {
-      type: 'json',
+      type: "json",
       custom: isStopwatch,
     },
+    recurrence: {
+      type: "json",
+      custom: isRecurrence,
+    },
     isSubscribed: {
-      type: 'boolean',
+      type: "boolean",
     },
   },
 
   exits: {
     notEnoughRights: {
-      responseType: 'forbidden',
+      responseType: "forbidden",
     },
     cardNotFound: {
-      responseType: 'notFound',
+      responseType: "notFound",
     },
     boardNotFound: {
-      responseType: 'notFound',
+      responseType: "notFound",
     },
     listNotFound: {
-      responseType: 'notFound',
+      responseType: "notFound",
     },
     coverAttachmentNotFound: {
-      responseType: 'notFound',
+      responseType: "notFound",
     },
     listMustBePresent: {
-      responseType: 'unprocessableEntity',
+      responseType: "unprocessableEntity",
     },
     coverAttachmentMustContainImage: {
-      responseType: 'unprocessableEntity',
+      responseType: "unprocessableEntity",
     },
     positionMustBePresent: {
-      responseType: 'unprocessableEntity',
+      responseType: "unprocessableEntity",
     },
   },
 
@@ -229,7 +237,7 @@ module.exports = {
 
     const pathToProject = await sails.helpers.cards
       .getPathToProjectById(inputs.id)
-      .intercept('pathNotFound', () => Errors.CARD_NOT_FOUND);
+      .intercept("pathNotFound", () => Errors.CARD_NOT_FOUND);
 
     let { card } = pathToProject;
     const { list, board, project } = pathToProject;
@@ -243,19 +251,20 @@ module.exports = {
       throw Errors.CARD_NOT_FOUND; // Forbidden
     }
 
-    const availableInputKeys = ['id', 'isSubscribed'];
+    const availableInputKeys = ["id", "isSubscribed"];
     if (boardMembership.role === BoardMembership.Roles.EDITOR) {
       availableInputKeys.push(
-        'boardId',
-        'listId',
-        'coverAttachmentId',
-        'type',
-        'position',
-        'name',
-        'description',
-        'dueDate',
-        'isDueCompleted',
-        'stopwatch',
+        "boardId",
+        "listId",
+        "coverAttachmentId",
+        "type",
+        "position",
+        "name",
+        "description",
+        "dueDate",
+        "isDueCompleted",
+        "stopwatch",
+        "recurrence",
       );
     }
 
@@ -269,7 +278,7 @@ module.exports = {
     if (!_.isUndefined(inputs.boardId)) {
       ({ board: nextBoard, project: nextProject } = await sails.helpers.boards
         .getPathToProjectById(inputs.boardId)
-        .intercept('pathNotFound', () => Errors.BOARD_NOT_FOUND));
+        .intercept("pathNotFound", () => Errors.BOARD_NOT_FOUND));
 
       boardMembership = await BoardMembership.qm.getOneByBoardIdAndUserId(
         nextBoard.id,
@@ -298,25 +307,32 @@ module.exports = {
 
     let nextCoverAttachment;
     if (inputs.coverAttachmentId) {
-      nextCoverAttachment = await Attachment.qm.getOneById(inputs.coverAttachmentId, {
-        cardId: card.id,
-      });
+      nextCoverAttachment = await Attachment.qm.getOneById(
+        inputs.coverAttachmentId,
+        {
+          cardId: card.id,
+        },
+      );
 
-      if (!nextCoverAttachment || nextCoverAttachment.type !== Attachment.Types.FILE) {
+      if (
+        !nextCoverAttachment ||
+        nextCoverAttachment.type !== Attachment.Types.FILE
+      ) {
         throw Errors.COVER_ATTACHMENT_NOT_FOUND;
       }
     }
 
     const values = _.pick(inputs, [
-      'coverAttachmentId',
-      'type',
-      'position',
-      'name',
-      'description',
-      'dueDate',
-      'isDueCompleted',
-      'stopwatch',
-      'isSubscribed',
+      "coverAttachmentId",
+      "type",
+      "position",
+      "name",
+      "description",
+      "dueDate",
+      "isDueCompleted",
+      "stopwatch",
+      "recurrence",
+      "isSubscribed",
     ]);
 
     card = await sails.helpers.cards.updateOne
@@ -335,10 +351,13 @@ module.exports = {
         actorUser: currentUser,
         request: this.req,
       })
-      .intercept('positionMustBeInValues', () => Errors.POSITION_MUST_BE_PRESENT)
-      .intercept('listMustBeInValues', () => Errors.LIST_MUST_BE_PRESENT)
       .intercept(
-        'coverAttachmentInValuesMustContainImage',
+        "positionMustBeInValues",
+        () => Errors.POSITION_MUST_BE_PRESENT,
+      )
+      .intercept("listMustBeInValues", () => Errors.LIST_MUST_BE_PRESENT)
+      .intercept(
+        "coverAttachmentInValuesMustContainImage",
         () => Errors.COVER_ATTACHMENT_MUST_CONTAIN_IMAGE,
       );
 

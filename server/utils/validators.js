@@ -3,11 +3,11 @@
  * Licensed under the Fair Use License: https://github.com/plankanban/planka/blob/master/LICENSE.md
  */
 
-const validator = require('validator');
-const zxcvbn = require('zxcvbn');
-const moment = require('moment');
+const validator = require("validator");
+const zxcvbn = require("zxcvbn");
+const moment = require("moment");
 
-const MAX_STRING_ID = '9223372036854775807';
+const MAX_STRING_ID = "9223372036854775807";
 
 const ID_REGEX = /^[1-9][0-9]*$/;
 const IDS_WITH_COMMA_REGEX = /^[1-9][0-9]*(,[1-9][0-9]*)*$/;
@@ -17,24 +17,27 @@ const is = (defaultValue) => (value) => value === defaultValue;
 
 const isUrl = (value) =>
   validator.isURL(value, {
-    protocols: ['http', 'https'],
+    protocols: ["http", "https"],
     require_tld: false,
     require_protocol: true,
   });
 
-const isIdInRange = (value) => value.length < MAX_STRING_ID.length || value <= MAX_STRING_ID;
+const isIdInRange = (value) =>
+  value.length < MAX_STRING_ID.length || value <= MAX_STRING_ID;
 
-const isIdsWithCommaInRange = (value) => _.every(value.split(','), isIdInRange);
+const isIdsWithCommaInRange = (value) => _.every(value.split(","), isIdInRange);
 
 const isId = (value) =>
-  value.length <= MAX_STRING_ID.length && ID_REGEX.test(value) && isIdInRange(value);
+  value.length <= MAX_STRING_ID.length &&
+  ID_REGEX.test(value) &&
+  isIdInRange(value);
 
 const isIds = (values) => _.every(values, isId);
 
 const isPassword = (value) => zxcvbn(value).score >= 2; // TODO: move to config
 
 const isEmailOrUsername = (value) =>
-  value.includes('@')
+  value.includes("@")
     ? validator.isEmail(value)
     : value.length >= 3 && value.length <= 32 && USERNAME_REGEX.test(value);
 
@@ -45,11 +48,36 @@ const isStopwatch = (value) => {
     return false;
   }
 
-  if (!_.isNull(value.startedAt) && !moment(value.startedAt, moment.ISO_8601, true).isValid()) {
+  if (
+    !_.isNull(value.startedAt) &&
+    !moment(value.startedAt, moment.ISO_8601, true).isValid()
+  ) {
     return false;
   }
 
   if (!_.isFinite(value.total) || value.total < 0) {
+    return false;
+  }
+
+  return true;
+};
+
+const RECURRENCE_TYPES = ["daily", "weekly", "monthly", "yearly"];
+
+const isRecurrence = (value) => {
+  if (_.isNull(value)) {
+    return true;
+  }
+
+  if (!_.isPlainObject(value)) {
+    return false;
+  }
+
+  if (!RECURRENCE_TYPES.includes(value.type)) {
+    return false;
+  }
+
+  if (!_.isFinite(value.interval) || value.interval < 1) {
     return false;
   }
 
@@ -73,4 +101,5 @@ module.exports = {
   isEmailOrUsername,
   isDueDate,
   isStopwatch,
+  isRecurrence,
 };

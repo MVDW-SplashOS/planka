@@ -103,18 +103,22 @@
  *         $ref: '#/components/responses/UnprocessableEntity'
  */
 
-const { isDueDate, isStopwatch } = require('../../../utils/validators');
-const { idInput } = require('../../../utils/inputs');
+const {
+  isDueDate,
+  isStopwatch,
+  isRecurrence,
+} = require("../../../utils/validators");
+const { idInput } = require("../../../utils/inputs");
 
 const Errors = {
   NOT_ENOUGH_RIGHTS: {
-    notEnoughRights: 'Not enough rights',
+    notEnoughRights: "Not enough rights",
   },
   LIST_NOT_FOUND: {
-    listNotFound: 'List not found',
+    listNotFound: "List not found",
   },
   POSITION_MUST_BE_PRESENT: {
-    positionMustBePresent: 'Position must be present',
+    positionMustBePresent: "Position must be present",
   },
 };
 
@@ -125,49 +129,53 @@ module.exports = {
       required: true,
     },
     type: {
-      type: 'string',
+      type: "string",
       isIn: Object.values(Card.Types),
       required: true,
     },
     position: {
-      type: 'number',
+      type: "number",
       min: 0,
       allowNull: true,
     },
     name: {
-      type: 'string',
+      type: "string",
       maxLength: 1024,
       required: true,
     },
     description: {
-      type: 'string',
+      type: "string",
       isNotEmptyString: true,
       maxLength: 1048576,
       allowNull: true,
     },
     dueDate: {
-      type: 'string',
+      type: "string",
       custom: isDueDate,
     },
     isDueCompleted: {
-      type: 'boolean',
+      type: "boolean",
       allowNull: true,
     },
     stopwatch: {
-      type: 'json',
+      type: "json",
       custom: isStopwatch,
+    },
+    recurrence: {
+      type: "json",
+      custom: isRecurrence,
     },
   },
 
   exits: {
     notEnoughRights: {
-      responseType: 'forbidden',
+      responseType: "forbidden",
     },
     listNotFound: {
-      responseType: 'notFound',
+      responseType: "notFound",
     },
     positionMustBePresent: {
-      responseType: 'unprocessableEntity',
+      responseType: "unprocessableEntity",
     },
   },
 
@@ -176,7 +184,7 @@ module.exports = {
 
     const { list, board, project } = await sails.helpers.lists
       .getPathToProjectById(inputs.listId)
-      .intercept('pathNotFound', () => Errors.LIST_NOT_FOUND);
+      .intercept("pathNotFound", () => Errors.LIST_NOT_FOUND);
 
     const boardMembership = await BoardMembership.qm.getOneByBoardIdAndUserId(
       board.id,
@@ -192,13 +200,14 @@ module.exports = {
     }
 
     const values = _.pick(inputs, [
-      'type',
-      'position',
-      'name',
-      'description',
-      'dueDate',
-      'isDueCompleted',
-      'stopwatch',
+      "type",
+      "position",
+      "name",
+      "description",
+      "dueDate",
+      "isDueCompleted",
+      "stopwatch",
+      "recurrence",
     ]);
 
     const card = await sails.helpers.cards.createOne
@@ -212,7 +221,10 @@ module.exports = {
         },
         request: this.req,
       })
-      .intercept('positionMustBeInValues', () => Errors.POSITION_MUST_BE_PRESENT);
+      .intercept(
+        "positionMustBeInValues",
+        () => Errors.POSITION_MUST_BE_PRESENT,
+      );
 
     return {
       item: card,

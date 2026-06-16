@@ -141,8 +141,8 @@
  */
 
 const Types = {
-  PROJECT: 'project',
-  STORY: 'story',
+  PROJECT: "project",
+  STORY: "story",
 };
 
 module.exports = {
@@ -154,48 +154,51 @@ module.exports = {
     //  ╩  ╩╚═╩╩ ╩╩ ╩ ╩ ╚╝ ╚═╝╚═╝
 
     type: {
-      type: 'string',
+      type: "string",
       isIn: Object.values(Types),
       required: true,
     },
     position: {
-      type: 'number',
+      type: "number",
       allowNull: true,
     },
     name: {
-      type: 'string',
+      type: "string",
       required: true,
     },
     description: {
-      type: 'string',
+      type: "string",
       isNotEmptyString: true,
       allowNull: true,
     },
     dueDate: {
-      type: 'ref',
-      columnName: 'due_date',
+      type: "ref",
+      columnName: "due_date",
     },
     isDueCompleted: {
-      type: 'boolean',
+      type: "boolean",
       allowNull: true,
-      columnName: 'is_due_completed',
+      columnName: "is_due_completed",
     },
     stopwatch: {
-      type: 'json',
+      type: "json",
+    },
+    recurrence: {
+      type: "json",
     },
     commentsTotal: {
-      type: 'number',
+      type: "number",
       defaultsTo: 0,
-      columnName: 'comments_total',
+      columnName: "comments_total",
     },
     isClosed: {
-      type: 'boolean',
+      type: "boolean",
       defaultsTo: false,
-      columnName: 'is_closed',
+      columnName: "is_closed",
     },
     listChangedAt: {
-      type: 'ref',
-      columnName: 'list_changed_at',
+      type: "ref",
+      columnName: "list_changed_at",
     },
 
     //  ╔═╗╔╦╗╔╗ ╔═╗╔╦╗╔═╗
@@ -208,57 +211,57 @@ module.exports = {
 
     // Denormalization
     boardId: {
-      model: 'Board',
+      model: "Board",
       required: true,
-      columnName: 'board_id',
+      columnName: "board_id",
     },
     listId: {
-      model: 'List',
+      model: "List",
       required: true,
-      columnName: 'list_id',
+      columnName: "list_id",
     },
     creatorUserId: {
-      model: 'User',
-      columnName: 'creator_user_id',
+      model: "User",
+      columnName: "creator_user_id",
     },
     prevListId: {
-      model: 'List',
-      columnName: 'prev_list_id',
+      model: "List",
+      columnName: "prev_list_id",
     },
     coverAttachmentId: {
-      model: 'Attachment',
-      columnName: 'cover_attachment_id',
+      model: "Attachment",
+      columnName: "cover_attachment_id",
     },
     subscriptionUsers: {
-      collection: 'User',
-      via: 'cardId',
-      through: 'CardSubscription',
+      collection: "User",
+      via: "cardId",
+      through: "CardSubscription",
     },
     memberUsers: {
-      collection: 'User',
-      via: 'cardId',
-      through: 'CardMembership',
+      collection: "User",
+      via: "cardId",
+      through: "CardMembership",
     },
     labels: {
-      collection: 'Label',
-      via: 'cardId',
-      through: 'CardLabel',
+      collection: "Label",
+      via: "cardId",
+      through: "CardLabel",
     },
     taskLists: {
-      collection: 'TaskList',
-      via: 'cardId',
+      collection: "TaskList",
+      via: "cardId",
     },
     attachments: {
-      collection: 'Attachment',
-      via: 'cardId',
+      collection: "Attachment",
+      via: "cardId",
     },
     comments: {
-      collection: 'Comment',
-      via: 'cardId',
+      collection: "Comment",
+      via: "cardId",
     },
     actions: {
-      collection: 'Action',
-      via: 'cardId',
+      collection: "Action",
+      via: "cardId",
     },
   },
 };

@@ -1,0 +1,15 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #555;
+  font-size: 12px;
+}
+
+.icon {
+  margin-right: 2px;
+}
+
+.text {
+  text-transform: capitalize;
+}
